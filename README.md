@@ -1,4 +1,4 @@
-# A Methodological Study of AI Robustness Under Real-World Clinical MRI Quality Constraints: Evidence from a Nigerian Brain MRI Dataset
+# Beyond Research-Grade MRI: A Methodological Study of AI Robustness on a Nigerian Clinical Brain MRI Dataset
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
@@ -7,258 +7,167 @@
 [![SimpleITK](https://img.shields.io/badge/SimpleITK-Image_Processing-blue.svg)](https://simpleitk.org/)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-Machine_Learning-orange.svg)](https://scikit-learn.org/)
 
-This repository contains the code, evaluation pipelines, and experimental frameworks for **"A Methodological Study of AI Robustness Under Real-World Clinical MRI Quality Constraints: Evidence from a Nigerian Brain MRI Dataset."** 
+> **Core Thesis:** Most neuroimaging AI systems are developed and validated on highly curated, research-grade MRI datasets. Their behavior on heterogeneous, lower-quality clinical MRI remains poorly understood, particularly in low-resource healthcare settings. This study systematically characterizes model robustness, calibration, uncertainty, and explainability using a real-world Nigerian clinical MRI dataset.
 
-This study moves beyond standard disease-classification benchmarks to systematically characterize the robustness, calibration, uncertainty, and explainability of machine learning and deep learning models when subjected to real-world clinical MRI quality constraints.
+---
+
+## Conceptual Workflow
+
+The experimental framework of the study is structured as follows:
+
+```mermaid
+flowchart TD
+    A[Nigerian Brain MRI Dataset <br/> 88 Subjects, 787 Scans <br/> Heterogeneous Sequence Profiles] --> B[Image Quality Assessment <br/> Objective IQMs: SNR, CNR, EFC, FWHM]
+    B --> C[Controlled Progressive Degradation <br/> Blur, Noise, Resampling, Motion]
+    C --> D{Modeling Pipelines <br/> Subject-Level Classification}
+    D --> E[Radiomics Pipeline <br/> PyRadiomics + Random Forest]
+    D --> F[Deep Learning Baseline <br/> ResNet-18]
+    D --> G[Deep Learning Specialized <br/> DenseNet-121]
+    E & F & G --> H[Multi-Task & Multi-Sequence Robustness Evaluation]
+    H --> I[Robustness Analysis <br/> Performance - Calibration - Uncertainty - Explainability]
+```
 
 ---
 
 ## Table of Contents
-- [Overview](#overview)
-- [Scientific Motivation](#scientific-motivation)
-- [What is New in This Study](#what-is-new-in-this-study)
 - [Research Questions](#research-questions)
 - [Objectives](#objectives)
 - [Dataset Specifications](#dataset-specifications)
+  - [Modality Availability Statistics](#modality-availability-statistics)
 - [Experimental Design](#experimental-design)
-- [Methodology](#methodology)
-  - [Image Quality Assessment (IQA)](#image-quality-assessment-iqa)
-  - [Controlled Image Degradation](#controlled-image-degradation)
-  - [Model Architectures](#model-architectures)
-  - [Robustness & Uncertainty Evaluation](#robustness--uncertainty-evaluation)
-  - [Explainability Stability Analysis](#explainability-stability-analysis)
-  - [Statistical Analysis](#statistical-analysis)
+- [Methodology Overview](#methodology-overview)
 - [Expected Outcomes](#expected-outcomes)
-- [Scientific Contribution](#scientific-contribution)
+- [Limitations and Scope](#limitations-and-scope)
 - [Repository Structure](#repository-structure)
 - [Installation](#installation)
 - [Usage](#usage)
-  - [1. Data Preprocessing](#1-data-preprocessing)
-  - [2. Image Quality Profiling](#2-image-quality-profiling)
-  - [3. Applying Controlled Degradations](#3-applying-controlled-degradations)
-  - [4. Model Training](#4-model-training)
-  - [5. Robustness & Explainability Evaluation](#5-robustness--explainability-evaluation)
 - [Citation](#citation)
 - [License](#license)
 
 ---
 
-## Overview
-
-Artificial intelligence (AI) models in neuroimaging are predominantly developed using high-quality research datasets acquired under carefully standardized imaging protocols (e.g., ADNI, UK Biobank, Human Connectome Project, and OASIS). However, these datasets do not represent the imaging conditions encountered in routine clinical practice, particularly in low- and middle-income countries (LMICs).
-
-Clinical MRI in resource-constrained environments commonly exhibits:
-- **Lower magnetic field strength** (e.g., 1.5T and sub-Tesla scanners)
-- **Heterogeneous acquisition protocols** across different scanner manufacturers
-- **Variable slice orientations** and slice thicknesses
-- **Reduced spatial resolution** to minimize scan acquisition times
-- **Clinical artifacts** such as patient motion, blur, and flow artifacts
-- **Scanner-dependent intensity variations** and bias fields
-
-These variations create a substantial **domain gap** between research-grade MRI and clinical reality. Rather than focusing solely on maximizing classification accuracy, this study characterizes how different AI architectures behave when trained and evaluated under progressively degraded, realistic imaging conditions. We evaluate **robustness, stability, calibration, uncertainty, and explainability** to determine which modeling paradigms remain reliable when clinical image quality deteriorates.
-
----
-
-## Scientific Motivation
-
-Medical AI literature overwhelmingly evaluates algorithms using carefully curated research datasets. Clinical deployment, however, occurs in environments where MRI quality is substantially lower. This mismatch contributes to poor generalization, unreliable predictions, and limited adoption of AI systems in routine clinical workflows.
-
-Africa represents one of the largest gaps in this literature. Most published neuroimaging AI studies do not evaluate:
-1. Low-field MRI scans.
-2. Highly heterogeneous scanner configurations.
-3. Resource-limited clinical environments.
-
-This study directly addresses this gap by utilizing a unique, open dataset of clinical brain MRI scans from Nigeria to analyze model resilience under clinical reality.
-
----
-
-## What is New in This Study
-
-Unlike standard disease-classification benchmarks, this study introduces a controlled methodological investigation into AI robustness under real-world clinical imaging constraints:
-
-1. **Real-World African Clinical MRI Benchmark**: Evaluation is performed on a heterogeneous Nigerian clinical MRI dataset containing multiple structural modalities, variable acquisition protocols, and diverse disease groups.
-2. **Robustness-Centric Evaluation**: Metrics such as model calibration (Expected Calibration Error), predictive uncertainty, performance degradation curves, and explainability stability are treated as primary outcomes, rather than secondary to accuracy.
-3. **Progressive Image Degradation Framework**: Images are systematically degraded through controlled perturbations (Gaussian blur, Gaussian noise, motion artifacts, reduced spatial resolution, and intensity non-uniformity) to map exact failure modes.
-4. **Image Quality–Aware AI Evaluation**: Objective MRI quality metrics are incorporated directly into the model evaluation. Performance is analyzed as a function of image quality, rather than treating quality as a nuisance variable.
-5. **Explainability Stability**: We investigate whether model explanations (e.g., Grad-CAM, Integrated Gradients) remain stable and anatomically consistent as image quality decreases.
-6. **Clinical Translation**: The study evaluates AI under conditions representative of hospitals in low-resource healthcare systems rather than idealized research labs.
-
----
-
 ## Research Questions
 
-1. **How robust are different AI architectures to reduced MRI image quality?**
-2. **Which model family (Classical Radiomics vs. CNNs vs. ViTs vs. Medical Foundation Models) exhibits the greatest resilience under low-field clinical imaging?**
-3. **How does predictive uncertainty and calibration change as image quality deteriorates?**
-4. **Do explainability maps remain anatomically consistent under degraded imaging, or do they shift focus to artifact patterns?**
-5. **Can quality-aware learning (incorporating image quality metrics as metadata) improve robustness?**
-6. **Which objective image quality metrics (IQMs) best predict AI prediction failure?**
+1. **How robust are AI models across three clinically relevant neurological groups under real-world MRI quality constraints?**
+2. **Which disease pair (Control vs. Dementia, Control vs. Parkinson's, or Dementia vs. Parkinson's) is most difficult to separate under progressive quality degradation?**
+3. **Does image quality affect Parkinson's detection differently than dementia detection?**
+4. **Which structural MRI sequence (T1, T2, or FLAIR) contributes most to classification robustness?**
+5. **How does incomplete modality coverage (missing sequences) affect model robustness and generalization in multi-sequence configurations?**
 
 ---
 
 ## Objectives
 
 ### Primary Objectives
-- Evaluate and compare the robustness of classical machine learning (Radiomics-based) and deep learning models.
-- Quantify performance degradation under realistic clinical image artifacts.
-- Measure calibration error and predictive uncertainty under out-of-distribution quality domains.
-- Evaluate the spatial stability of explainability maps across progressive degradation levels.
+- Benchmark the robustness of classical machine learning (Radiomics-based) and deep learning models across multiple clinical tasks.
+- Quantify performance degradation curves under controlled clinical image artifacts.
+- Measure calibration error (Expected Calibration Error) and predictive uncertainty under out-of-distribution quality domains.
+- Evaluate the stability of explainability maps (localization consistency) under progressive degradation.
 
 ### Secondary Objectives
-- Characterize mathematical relationships between MRI quality metrics and AI performance.
+- Characterize the mathematical correlation between objective MRI quality metrics and classification reliability.
+- Evaluate the impact of missing sequences (modality dropout) on multi-modal classification robustness.
 - Identify actionable quality thresholds beyond which diagnostic AI reliability substantially decreases.
 
 ---
 
 ## Dataset Specifications
 
-Experiments are conducted on the **Nigerian Brain MRI Dataset**:
+Experiments are conducted on the **Nigerian Brain MRI Dataset**, reflecting a highly heterogeneous clinical environment:
 
-| Parameter | Specification |
-| :--- | :--- |
-| **Subjects** | 88 subjects |
-| **Total Scans** | 787 structural images |
-| **Clinical Labels** | Healthy Controls, Dementia, Parkinson's Disease |
-| **Structural Modalities** | T1-weighted (T1w), T2-weighted (T2w), FLAIR |
-| **Scanners** | 1.5T and lower-field clinical scanners |
-| **Acquisitions** | Axial, Coronal, Sagittal orientations |
-| **Heterogeneity** | Variable acquisition protocols, multiple runs for some subjects, heterogeneous image quality, and demographic metadata (age, sex, education, socioeconomic status, geopolitical region). |
+- **Subjects**: 88 subjects (Control: 33 [37.5%], Dementia: 33 [37.5%], Parkinson's Disease: 22 [25.0%]).
+- **Total Scans**: 787 structural images (T1w, T2w, FLAIR) acquired using 1.5T and sub-Tesla clinical scanners.
+- **Heterogeneity**: Subjects do not have complete coverage across all sequences. Many subjects have only one or two modalities, with variable orientations (Axial, Coronal, Sagittal) and multiple runs.
+
+### Modality Availability Statistics
+
+To establish statistical feasibility for multi-sequence combinations, the sequence availability across the 88 subjects is outlined below:
+
+| Sequence / Combination | Subjects Available | Percentage |
+| :--- | :--- | :--- |
+| **T1w** | 88 | 100.0% |
+| **T2w** | 82 | 93.2% |
+| **FLAIR** | 44 | 50.0% |
+| **T1w + T2w** | 82 | 93.2% |
+| **T1w + FLAIR** | 44 | 50.0% |
+| **T2w + FLAIR** | 44 | 50.0% |
+| **T1w + T2w + FLAIR** | 44 | 50.0% |
+
+*Note: Exact available subject counts are verified during ingestion validation. The high frequency of missing FLAIR sequences makes evaluating missing-modality resilience highly relevant.*
 
 ---
 
 ## Experimental Design
 
-The study runs a parallel evaluation pipeline comparing three distinct modeling paradigms:
+The study is designed around two primary axes: multi-task classification and missing-modality robustness.
 
-```
-                      ┌───────────────────────────────────────┐
-                      │      Nigerian Clinical MRI Dataset    │
-                      └───────────────────┬───────────────────┘
-                                          │
-                         ┌────────────────┴────────────────┐
-                         ▼                                 ▼
-           ┌───────────────────────────┐     ┌───────────────────────────┐
-           │   Radiomics Pipeline      │     │  Deep Learning Pipeline   │
-           │ (SimpleITK + PyRadiomics) │     │     (PyTorch & MONAI)     │
-           └─────────────┬─────────────┘     └─────────────┬─────────────┘
-                         │                                 │
-         ┌───────────────┼───────────────┐        ┌────────┼────────┐
-         ▼               ▼               ▼        ▼        ▼        ▼
-    ┌─────────┐    ┌───────────┐    ┌─────────┐ ┌───┐    ┌───┐    ┌───┐
-    │Logistic │    │  Random   │    │ XGBoost │ │2D │    │ViT│    │FM │
-    │ Regres. │    │  Forest   │    │         │ │CNN│    │   │    │   │
-    └─────────┘    └───────────┘    └─────────┘ └───┘    └───┘    └───┘
-```
+### 1. Multi-Task Classification Setup
+Models are trained and evaluated across four distinct tasks:
+* **Task 1: Control vs. Dementia** — Separation of normal aging from cognitive decline.
+* **Task 2: Control vs. Parkinson's** — Sensitivity to subcortical Parkinsonian structural alterations.
+* **Task 3: Dementia vs. Parkinson's** — Differential diagnostics (the most clinically significant binary task).
+* **Task 4 (Primary): Three-Class Classification** — Simultaneous categorization of Control vs. Dementia vs. Parkinson's.
+
+### 2. Sequence Availability and Missingness Analysis
+Since clinical protocols do not always enforce acquisition of all sequences, we structure experiments to accommodate missing modalities:
+* **Single-Modality Benchmarks**: Separate models trained on T1-only, T2-only, and FLAIR-only subsets.
+* **Available-Modality Baseline**: Subject-level predictions generated using whatever sequence combinations are present.
+* **Paired-Subset Analysis**: Evaluations restricted to subjects who share identical modality pairs (e.g., evaluating only on the 44 subjects with complete T1+T2+FLAIR).
+* **Missing-Modality Robustness**: Test how model performance degrades when one sequence is deliberately omitted (modality dropout test).
+
+### 3. Subject-Level Unit of Analysis
+Because subjects have variable scan counts, we designate **Subject-level classification** as the core evaluation unit:
+- Predictions or features are aggregated per subject rather than treating each image independently.
+- This prevents data leakage (same subject's images in both training and test splits) and aligns with clinical utility.
 
 ---
 
-## Methodology
+## Methodology Overview
 
-### Image Quality Assessment (IQA)
+### 1. Image Quality Assessment (IQA)
+We extract objective Image Quality Metrics (IQMs) to characterize spatial and statistical property changes:
+- **Signal-to-Noise Ratio (SNR)**: Strength of diagnostic signal relative to background noise.
+- **Contrast-to-Noise Ratio (CNR)**: Distinctness of tissue classes (gray matter vs. white matter).
+- **Entropy Focus Criterion (EFC)**: Focus index; ghosting and motion blur increase voxel intensity entropy.
+- **Full Width at Half Maximum (FWHM)**: Estimates effective spatial resolution and blur.
 
-We extract objective Image Quality Metrics (IQMs) using a pipeline inspired by MRIQC. These metrics quantify spatial and statistical properties of the images:
+### 2. Controlled Progressive Image Degradation
+We systematically apply four progressive levels of clinical degradation to establish robustness curves:
+* **Gaussian Blur**: Convolution using SimpleITK to simulate spatial smoothing.
+* **Gaussian Noise**: Additive zero-mean Gaussian noise to simulate low magnetic field strengths.
+* **Reduced Spatial Resolution**: Representative downsampling to simulate anisotropic voxels, thicker slices, and interpolation artifacts commonly encountered in clinical acquisitions. These serve as representative quality perturbations rather than a complete simulation of every clinical scanner parameter.
+* **Motion Artifacts**: Introduction of sinusoidal phase-shifts to simulate patient movement.
 
-- **Signal-to-Noise Ratio (SNR)**:
-  $$\text{SNR} = \frac{\mu_{\text{foreground}}}{\sigma_{\text{background}}}$$
-  Measures the relative strength of the diagnostic signal to the background noise.
-- **Contrast-to-Noise Ratio (CNR)**:
-  $$\text{CNR} = \frac{|\mu_{\text{gray matter}} - \mu_{\text{white matter}}|}{\sigma_{\text{background}}}$$
-  Quantifies the distinctness of different tissue classes.
-- **Entropy Focus Criterion (EFC)**:
-  $$E = -\sum_{i} p_i \ln(p_i)$$
-  Measures the focus of the image; ghosting and motion blur increase the entropy of the voxel intensity distribution.
-- **Foreground-Background Energy Ratio (FBER)**:
-  $$\text{FBER} = \frac{\text{Mean Energy}_{\text{foreground}}}{\text{Mean Energy}_{\text{background}}}$$
-- **Full Width at Half Maximum (FWHM)**: Estimates the effective spatial resolution and blur.
-- **Intensity Non-uniformity (INU)**: Measures the spatial variation of the bias field (field inhomogeneity).
+### 3. Model Architectures
+We compare representative paradigm classes:
+- **Classical ML**: Radiomics features (shape, first-order statistics, GLCM, GLRLM, GLSZM) extracted using PyRadiomics, classified using L2-regularized Logistic Regression and Random Forest.
+- **Standard Deep Learning (CNNs)**: ResNet-18 (parameter-efficient baseline) and DenseNet-121 (dense feature-reuse architecture).
 
-Each scan receives an empirical **composite quality score** derived from these metrics.
-
-### Controlled Image Degradation
-
-To characterize failure modes, we systematically apply five levels of controlled degradation (perturbations) using SimpleITK and PyTorch:
-
-```
-[Level 0: Original] 
-       │
-       ├──► [Level 1: Mild Blur] ───────► Gaussian kernel σ = 1.0 mm
-       │
-       ├──► [Level 2: Moderate Blur] ──► Gaussian kernel σ = 2.0 mm
-       │
-       ├──► [Level 3: Gaussian Noise] ──► Additive noise, σ_noise = 0.05
-       │
-       ├──► [Level 4: Reduced Res] ─────► Downsampling slice-select dimension (factor of 2)
-       │
-       └──► [Level 5: Combined] ────────► Noise + Blur + Sinusoidal Motion Artifacts
-```
-
-### Model Architectures
-
-We benchmark three paradigm classes:
-
-1. **Classical Machine Learning**: 
-   - **Features**: Radiomics features (shape, first-order statistics, GLCM, GLRLM, GLSZM) extracted using PyRadiomics.
-   - **Classifiers**: Logistic Regression (L2-regularized), Random Forest, and Gradient Boosted Trees (XGBoost).
-2. **Standard Deep Learning (2D/3D CNNs)**:
-   - **ResNet-18** (parameter-efficient baseline)
-   - **DenseNet-121** (dense feature-reuse architecture)
-   - **EfficientNet-B2** (compound-scaled architecture)
-3. **Transformer-based & Medical Foundation Models**:
-   - **Vision Transformer (ViT-B/16)** (patch-based self-attention)
-   - **MONAI Foundation Model** (ViT backbone pretrained on large-scale clinical neuroimaging via self-supervised learning).
-
-### Robustness & Uncertainty Evaluation
-
-- **Robustness Curves**: Model performance (F1, ROC-AUC) is plotted against degradation levels 0 to 5.
-- **Relative Robustness Index (RRI)**:
-  $$\text{RRI} = \frac{\text{AUC}_{\text{degraded}}}{\text{AUC}_{\text{baseline}}}$$
-- **Calibration Assessment**: 
-  - **Expected Calibration Error (ECE)**: Measures the discrepancy between predictive confidence and empirical accuracy.
-  - **Brier Score**: Evaluates the mean squared error of forecast probabilities.
-- **Uncertainty Estimation**: 
-  - **Monte-Carlo Dropout**: Estimating epistemic uncertainty during inference.
-  - **Deep Ensembles**: Measuring variance across models trained with different initializations.
-
-### Explainability Stability Analysis
-
-We analyze if models make predictions using relevant anatomy or noise artifacts:
-- **Attribution Methods**: Grad-CAM (CNNs), Attention Rollout (ViTs), Integrated Gradients, and Occlusion Sensitivity.
-- **Evaluation Metrics**:
-  - **Localization Consistency**: Intersection over Union (IoU) of top 10% attribution salience maps with clinical ROIs (e.g., hippocampus for Dementia).
-  - **Cosine Similarity & Pearson Correlation**: Spatial correlation of attributions across degradation levels $L_0 \rightarrow L_i$.
-  - **Attribution Entropy**: Quantifies whether attributions become overly diffuse under noise.
-
-### Statistical Analysis
-
-To ensure reproducibility and statistical validity:
-- **Repeated Cross-Validation**: 5-fold stratified subject-level cross-validation repeated 5 times.
-- **Confidence Intervals**: 95% bootstrap confidence intervals computed over 1000 resamples.
-- **Hypothesis Testing**:
-  - **McNemar’s Test**: Compare paired classification proportions between models.
-  - **DeLong’s Test**: Statistical comparison of ROC-AUC curves.
-- **Mixed-Effects Regression**: Modeling performance degradation as a function of continuous IQMs, treating subject IDs as random effects.
+### 4. Robustness & Uncertainty Metrics
+- **Robustness Curves**: F1-score and ROC-AUC plotted against degradation levels.
+- **Calibration Assessment**: Expected Calibration Error (ECE) and Brier Score.
+- **Uncertainty Estimation**: Monte-Carlo (MC) Dropout and Deep Ensembles.
+- **Explainability Stability**: Grad-CAM (for CNNs) and Integrated Gradients evaluated for localization consistency (IoU with clinical ROIs) and spatial correlation across degradation levels.
 
 ---
 
 ## Expected Outcomes
 
 We hypothesize that:
-1. **Radiomics Stability**: Classical radiomics models with tree-based classifiers may exhibit greater initial stability than large-capacity deep learning models on low-quality clinical MRI due to lower parameter complexity.
-2. **Deep Learning Degradation**: Deep learning performance will degrade more rapidly under out-of-distribution noise, though quality-aware training (e.g., adding IQA metrics as auxiliary inputs or data augmentation) will mitigate this effect.
-3. **Foundation Model Generalization**: Medical foundation models pretrained on large-scale clinical datasets will show significantly higher robustness compared to models trained from scratch or pretrained on ImageNet.
-4. **Explainability Drift**: Explainability maps will become unstable and shift focus from diagnostic anatomical ROIs to artifact patterns before classification accuracy drops, highlighting that explainability is a leading indicator of model failure.
-5. **Quality Thresholds**: Strong correlations between objective MRI quality metrics (like SNR and EFC) and model error will allow us to define clear minimum quality thresholds for clinical deployment.
+1. **Radiomics Stability**: Classical radiomics models with tree-based classifiers will exhibit higher baseline robustness under mild perturbations (due to lower parameter capacity) but will scale poorly on the three-class task and differential diagnostics compared to CNNs.
+2. **Modality Synergy**: Multimodal combinations will show higher relative robustness (RRI) compared to single-modality pipelines under equivalent degradation levels.
+3. **Sequence Sensitivity**: Image quality degradation will affect Parkinson's classification (reliant on specific subcortical structures) more severely than dementia classification (reliant on wider cortical atrophy patterns).
+4. **Explainability Drift**: Salience maps will lose anatomical focus and drift towards artifact patterns before a statistical drop in classification accuracy is observed, acting as a leading indicator of failure.
 
 ---
 
-## Scientific Contribution
+## Limitations and Scope
 
-This study contributes:
-- One of the first methodological evaluations of AI robustness on African clinical neuroimaging data.
-- A quality-aware benchmark for structural brain MRI.
-- A reproducible framework for robustness testing under realistic clinical image degradation.
-- Evidence to inform the safe deployment of medical AI in resource-limited healthcare environments.
-- Practical guidelines on how image quality influences diagnostic AI performance.
+Before training or deploying the codebase, note the following parameters of the study's scope:
+- **Structural MRI Only**: Analysis is limited to structural sequences (T1w, T2w, and FLAIR) and does not cover functional MRI (fMRI) or diffusion-weighted imaging (DWI).
+- **Clinical MRI Domain**: Designed around low-field (1.5T and below) scanner profiles exhibiting real-world clinical quality variability.
+- **Methodological Characterization**: The project's goal is to characterize model failure modes, calibration, and explainability under noise, rather than building a state-of-the-art diagnostic classifier for clinical deployment.
+- **Single-Center Cohort**: The dataset represents a single-center cohort from Nigeria; caution should be exercised when generalising findings to other regional healthcare scanners.
 
 ---
 
@@ -271,48 +180,38 @@ This study contributes:
 ├── requirements.txt
 ├── config/
 │   ├── config.yaml              # Global training and evaluation parameters
-│   └── degradation.yaml         # Controlled perturbation parameters (blur, noise, resampling)
+│   └── degradation.yaml         # Controlled perturbation parameters
 ├── data/
 │   ├── raw/                     # Unaltered Nigerian Brain MRI Dataset
-│   └── processed/               # Preprocessed, registered, and degraded scans
+│   └── processed/               # Preprocessed and degraded scans
 ├── notebooks/
-│   ├── 01_eda_and_iqa.ipynb     # Exploratory analysis and baseline quality metrics
-│   └── 02_robustness_curves.ipynb# Visualization of results and degradation curves
+│   ├── 01_eda_and_iqa.ipynb     # Exploratory analysis and quality metrics
+│   └── 02_robustness_curves.ipynb# Result visualization and degradation curves
 ├── scripts/
 │   ├── setup_env.sh             # Dependency installer
 │   └── run_pipeline.sh          # Orchestrates the end-to-end pipeline
 └── src/
     ├── __init__.py
     ├── data/
-    │   ├── __init__.py
-    │   ├── loader.py            # Custom PyTorch Dataset/DataLoader (T1, T2, FLAIR)
-    │   └── preprocess.py        # Spacing resampling, orientation normalization, N4 bias correction
+    │   ├── loader.py            # Subject-level PyTorch Dataset (T1, T2, FLAIR handling)
+    │   └── preprocess.py        # Resampling, reorientation, and N4 bias correction
     ├── degradation/
-    │   ├── __init__.py
-    │   ├── perturbations.py     # SimpleITK/PyTorch image degradation transforms
-    │   └── pipeline.py          # Script to generate degraded image sets
+    │   ├── perturbations.py     # Image degradation transforms (SimpleITK)
+    │   └── pipeline.py          # Batch generator of degraded scans
     ├── models/
-    │   ├── __init__.py
-    │   ├── baseline.py          # PyRadiomics extractor & ML classifiers (XGBoost, RF, LR)
-    │   ├── cnn.py               # Deep Learning architectures (ResNet, DenseNet, EfficientNet)
-    │   └── monai_fm.py          # ViT / MONAI foundation model wrapper
+    │   ├── baseline.py          # Radiomics extractor & ML classifiers (Random Forest, LR)
+    │   └── cnn.py               # Deep Learning architectures (ResNet-18, DenseNet-121)
     ├── evaluation/
-    │   ├── __init__.py
     │   ├── metrics.py           # IQMs, ECE, Brier Score, and RRI metrics
-    │   └── explain.py           # Captum-based Grad-CAM, IG, and attention attribution
+    │   └── explain.py           # Grad-CAM and Integrated Gradients stability
     └── utils/
-        ├── __init__.py
         ├── stats.py             # Mixed-effects models, DeLong test, McNemar
-        └── viz.py               # Generation of saliency maps, curves, and calibration plots
+        └── viz.py               # Curve generation and saliency heatmaps
 ```
 
 ---
 
 ## Installation
-
-### Prerequisites
-- Python 3.11+
-- CUDA-compatible GPU (recommended for Deep Learning models)
 
 ### Setup
 1. Clone this repository:
@@ -321,13 +220,7 @@ This study contributes:
    cd clinical-mri-ai-robustness
    ```
 
-2. Run the environment setup script (or install manually):
-   ```bash
-   chmod +x scripts/setup_env.sh
-   ./scripts/setup_env.sh
-   ```
-
-   *Alternatively, using pip:*
+2. Setup virtual environment and install dependencies:
    ```bash
    python -m venv venv
    source venv/bin/activate
@@ -340,7 +233,7 @@ This study contributes:
 ## Usage
 
 ### 1. Data Preprocessing
-Standardize raw scans (reorientation to LAS/RAS, N4 bias field correction, and isotropic voxel resampling):
+Standardize raw scans (reorientation, N4 bias correction, and resampling):
 ```bash
 python src/data/preprocess.py \
     --data_dir ./data/raw \
@@ -349,7 +242,7 @@ python src/data/preprocess.py \
 ```
 
 ### 2. Image Quality Profiling
-Generate baseline objective quality scores across the dataset:
+Generate baseline IQA metrics:
 ```bash
 python src/evaluation/metrics.py \
     --profile_iqa \
@@ -358,7 +251,7 @@ python src/evaluation/metrics.py \
 ```
 
 ### 3. Applying Controlled Degradations
-Generate the 5 progressive levels of degraded dataset variants:
+Apply blur, noise, resolution reduction, and motion artifacts:
 ```bash
 python src/degradation/pipeline.py \
     --input_dir ./data/processed \
@@ -367,16 +260,15 @@ python src/degradation/pipeline.py \
 ```
 
 ### 4. Model Training
-Train ML or DL models on clean baseline data or with quality-aware augmentations:
-* **Train XGBoost baseline on Radiomics features:**
+* **Train Random Forest baseline on Radiomics features:**
   ```bash
   python src/models/baseline.py \
       --train \
       --data_dir ./data/processed \
-      --model xgboost \
-      --out_dir ./checkpoints/xgboost/
+      --model randomforest \
+      --out_dir ./checkpoints/rf/
   ```
-* **Train DenseNet-121 using PyTorch:**
+* **Train DenseNet-121 on available sequences:**
   ```bash
   python src/models/cnn.py \
       --train \
@@ -388,7 +280,7 @@ Train ML or DL models on clean baseline data or with quality-aware augmentations
   ```
 
 ### 5. Robustness & Explainability Evaluation
-Evaluate model performance, calibration, and explainability stability across all degradation levels:
+Evaluate across all degradation levels:
 ```bash
 python src/evaluation/metrics.py \
     --evaluate_robustness \
@@ -396,7 +288,8 @@ python src/evaluation/metrics.py \
     --data_dir ./data/processed/degraded \
     --out_dir ./results/
 ```
-Generate and plot explainability attributions (e.g., Grad-CAM vs. Integrated Gradients):
+
+Generate attribution maps to assess explainability stability:
 ```bash
 python src/evaluation/explain.py \
     --model_path ./checkpoints/densenet/densenet121_best.pth \
@@ -413,7 +306,7 @@ If you use this repository or dataset in your research, please cite:
 
 ```bibtex
 @article{clinical_mri_robustness_nigerian2026,
-  title={A Methodological Study of AI Robustness Under Real-World Clinical MRI Quality Constraints: Evidence from a Nigerian Brain MRI Dataset},
+  title={Beyond Research-Grade MRI: A Methodological Study of AI Robustness on a Nigerian Clinical Brain MRI Dataset},
   author={Author, A. and Author, B. and Author, C.},
   journal={Journal of Medical Image Analysis},
   year={2026},
@@ -428,4 +321,3 @@ If you use this repository or dataset in your research, please cite:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-# clinical_mri_ai_robustness
