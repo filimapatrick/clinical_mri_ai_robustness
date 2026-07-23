@@ -125,31 +125,98 @@ Because subjects have variable scan counts, we designate **Subject-level classif
 ## Methodology Overview
 
 ### 1. Image Quality Assessment (IQA)
-We extract objective Image Quality Metrics (IQMs) to characterize spatial and statistical property changes:
+We extract objective Image Quality Metrics (IQMs) to characterize spatial and statistical property changes (MRIQC protocol; Esteban et al., 2017):
 - **Signal-to-Noise Ratio (SNR)**: Strength of diagnostic signal relative to background noise.
 - **Contrast-to-Noise Ratio (CNR)**: Distinctness of tissue classes (gray matter vs. white matter).
-- **Entropy Focus Criterion (EFC)**: Focus index; ghosting and motion blur increase voxel intensity entropy.
+- **Entropy Focus Criterion (EFC)**: Focus index; ghosting and motion blur increase voxel intensity entropy (Atkinson et al., 1997).
 - **Full Width at Half Maximum (FWHM)**: Estimates effective spatial resolution and blur.
 
 ### 2. Controlled Progressive Image Degradation
-We systematically apply four progressive levels of clinical degradation to establish robustness curves:
-* **Gaussian Blur**: Convolution using SimpleITK to simulate spatial smoothing.
-* **Gaussian Noise**: Additive zero-mean Gaussian noise to simulate low magnetic field strengths.
-* **Reduced Spatial Resolution**: Representative downsampling to simulate anisotropic voxels, thicker slices, and interpolation artifacts commonly encountered in clinical acquisitions. These serve as representative quality perturbations rather than a complete simulation of every clinical scanner parameter.
-* **Motion Artifacts**: Introduction of sinusoidal phase-shifts to simulate patient movement.
+Inspired by the corruption benchmarking philosophy introduced by **Hendrycks & Dietterich (2019)**, we systematically apply four progressive levels of clinical degradation ($L0$–$L3$) grounded in MRI acquisition physics:
+* **Gaussian Blur**: Computational approximation of reduced effective spatial resolution resulting from hardware limits or reconstruction smoothing.
+* **Rician Noise**: Signal-dependent noise added to complex channels before magnitude extraction ($|I + N(0, \sigma^2)|$), physically reflecting MRI magnitude signal physics (Gudbjartsson & Patz, 1995).
+* **Anisotropic Spatial Resolution Reduction**: Out-of-plane voxel downsampling ($z$-spacing: 2.0mm – 5.0mm) and re-interpolation to simulate thick-slice clinical acquisition constraints (Dufumier et al., 2021; Wood et al., 2022).
+* **Representative Motion Artifacts**: k-space phase perturbations ($S'(\mathbf{k}) = S(\mathbf{k}) \cdot e^{i \Delta \phi}$) generating representative motion ghosting (Shaw et al., 2020; Küstner et al., 2018).
+* **Composite Degradation ($L3$ Composite)**: Simultaneous combination of severe blur, Rician noise, slice thickness downsampling, and motion to evaluate performance under severely compromised clinical scan conditions.
 
 ### 3. Model Architectures
 We compare representative paradigm classes:
-- **Classical ML**: Radiomics features (shape, first-order statistics, GLCM, GLRLM, GLSZM) extracted using PyRadiomics, classified using L2-regularized Logistic Regression and Random Forest.
+- **Classical ML**: Radiomics features (shape, first-order statistics, GLCM, GLRLM, GLSZM) extracted using PyRadiomics under IBSI standards (Zwanenburg et al., 2020), classified using Random Forest and XGBoost.
 - **Standard Deep Learning (CNNs)**: ResNet-18 (parameter-efficient baseline) and DenseNet-121 (dense feature-reuse architecture).
 
 ### 4. Robustness & Uncertainty Metrics
-- **Robustness Curves**: F1-score and ROC-AUC plotted against degradation levels.
-- **Calibration Assessment**: Expected Calibration Error (ECE) and Brier Score.
-- **Uncertainty Estimation**: Monte-Carlo (MC) Dropout and Deep Ensembles.
-- **Explainability Stability**: Grad-CAM (for CNNs) and Integrated Gradients evaluated for localization consistency (IoU with clinical ROIs) and spatial correlation across degradation levels.
+- **Relative Robustness Index (RRI)**: Summary metric quantifying performance retention relative to baseline clean performance ($RRI = \frac{1}{K} \sum_{i=1}^{K} \frac{F1_{\text{degraded}, i}}{F1_{\text{baseline}}}$).
+- **Area Under the Robustness Curve (AURC)**: Scalar integral of F1 performance retention plotted across degradation severities ($L0 \to L3$).
+- **Calibration Assessment**: Expected Calibration Error (ECE; Guo et al., 2017) and Brier Score.
+- **Uncertainty Estimation**: Monte-Carlo (MC) Dropout (Gal & Ghahramani, 2016) and Deep Ensembles.
+- **Explainability Stability**: Grad-CAM (Selvaraju et al., 2017) localization consistency (IoU with anatomical ROIs) and spatial correlation across degradation levels (Adebayo et al., 2018).
 
 ---
+
+## Benchmark Progress & Findings (Phase 3A Radiomics)
+
+### 1. Leak-Free Clean Baseline ($L0$)
+Evaluated via 5-Fold Stratified Group Cross-Validation (`StratifiedGroupKFold`) with in-fold feature scaling, variance thresholding, $K=15$ feature selection, and Platt scaling probability calibration:
+- **Clean Baseline Macro F1**: **$0.5518 \pm 0.0531$**
+- **Clean Balanced Accuracy**: **$0.5846$**
+- **Calibrated Expected Calibration Error (ECE)**: **$0.2300$**
+
+### 2. Radiomics Robustness Decay & Relative Robustness Index ($RRI$)
+| Corruption Type | Severity Tier | Macro F1 | Relative Robustness Index ($RRI$) | Impact Summary |
+| :--- | :---: | :---: | :---: | :--- |
+| **Clean Baseline** | **$L0$** | **0.5518** | **1.0000** | Clean reference baseline |
+| **Gaussian Blur** | **$L1$** | **0.4019** | **0.7283** | Mild decay (-27.2%) |
+| **Gaussian Blur** | **$L2$** | **0.2394** | **0.4338** | Steep decay (-56.6%) |
+| **Gaussian Blur** | **$L3$** | **0.2139** | **0.3876** | Floor performance (-61.2%) |
+| **Motion Ringing** | **$L1$** | **0.1898** | **0.3439** | Catastrophic drop (-65.6%) |
+| **Motion Ringing** | **$L2$** | **0.1898** | **0.3439** | Floor performance saturation |
+| **Motion Ringing** | **$L3$** | **0.1898** | **0.3439** | Floor performance saturation |
+| **Rician Noise** | **$L1$** | **0.4005** | **0.7257** | Moderate decay (-27.4%) |
+
+*(Note: Noise L2/L3 & Resolution L1-L3 runs actively progressing)*
+
+---
+
+**current Stage and what to do next
+
+Viewed papper.md:126-135
+Viewed cnn.py:1-166
+
+Here is the exact setup and commands for you to continue your work for both **Phase 3A** and **Phase 3B**:
+
+---
+
+### 1. 🔄 Phase 3A: Resume Radiomics Degradation Evaluation (starting from `noise_L2`)
+
+Because the script automatically caches completed feature extraction CSVs (`radiomics_blur_L1.csv` ... `radiomics_noise_L1.csv`), re-running this command will **instantly skip all previously finished tiers** and resume right at **`Evaluating Radiomics model on noise (L2)`**:
+
+```bash
+cd /Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness && ./venv/bin/python scripts/evaluate_radiomics_degradation.py
+```
+
+---
+
+### 2. 🚀 Phase 3B: Launch Deep Learning Benchmark (DenseNet-121 & ResNet-18)
+
+To train the 3D Deep Learning architectures ([src/models/cnn.py](file:///Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness/src/models/cnn.py)) using PyTorch and MONAI, run the commands below:
+
+#### A. Train 3D DenseNet-121 Benchmark:
+```bash
+cd /Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness && ./venv/bin/python src/models/cnn.py --model densenet121 --task task4 --epochs 50 --batch_size 4 --out_dir ./checkpoints/densenet
+```
+
+#### B. Train 3D ResNet-18 Benchmark:
+```bash
+cd /Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness && ./venv/bin/python src/models/cnn.py --model resnet18 --task task4 --epochs 50 --batch_size 4 --out_dir ./checkpoints/resnet
+```
+
+---
+
+### 📋 Checklist & State Saved
+- [x] All completed empirical results ($L0$ clean, `blur` $L1$–$L3$, `motion` $L1$–$L3$, `noise` $L1$) are saved in [papper.md](file:///Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness/papper.md) and [README.md](file:///Volumes/MyHDD/ABDN_projects/clinical_mri_ai_robustness/README.md).
+- [x] `src/models/baseline.py` has the emergency mask threshold fallback to prevent PyRadiomics failures under motion/noise.
+- [x] `src/models/cnn.py` is configured with subject-level stratified group splitting, MONAI 3D backbones, early stopping checkpointing, and AdamW optimization.
+
 
 ## Expected Outcomes
 

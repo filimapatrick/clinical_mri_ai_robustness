@@ -3,7 +3,6 @@ torch>=2.0.0
 torchvision>=0.15.0
 monai>=1.2.0
 SimpleITK>=2.2.1
-pyradiomics>=3.0.1
 
 # Machine Learning & Data Processing
 numpy>=1.24.0

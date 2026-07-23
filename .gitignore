@@ -1,0 +1,23 @@
+# Python & Virtual Environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# macOS & System files
+.DS_Store
+._*
+=3.0.1
+
+# Large Data & Processed Datasets
+data/processed/
+data/degraded/
+data/raw/
+*.nii
+*.nii.gz
+
+# Model Checkpoints & Logs
+checkpoints/
+*.log
+*.pth
+*.pkl

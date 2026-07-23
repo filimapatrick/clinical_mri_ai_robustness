@@ -1,0 +1,51 @@
+# Global Configuration for Clinical MRI AI Robustness Study
+
+paths:
+  raw_data_dir: "/Volumes/MyHDD/ABDN_DATA/Data_from_brainlife/proj-6554f423b094062da63aa4c9"
+  participants_tsv: "/Volumes/MyHDD/ABDN_DATA/Data_from_brainlife/proj-6554f423b094062da63aa4c9/bids/participants.tsv"
+  processed_data_dir: "./data/processed"
+  catalog_csv: "./data/dataset_catalog.csv"
+  checkpoints_dir: "./checkpoints"
+  results_dir: "./results"
+
+preprocessing:
+  target_orientation: "RAS"
+  target_spacing: [1.0, 1.0, 1.0] # mm isotropic
+  n4_bias_field_correction: true
+  normalize_intensity: true       # Foreground Z-score normalization
+  image_size: [160, 192, 160]     # Standard crop/pad spatial dimensions
+
+labels:
+  mapping:
+    Control: 0
+    Dementia: 1
+    Parkinson: 2
+  reverse_mapping:
+    0: Control
+    1: Dementia
+    2: Parkinson
+
+tasks:
+  task1:
+    name: "Control vs Dementia"
+    classes: [0, 1]
+  task2:
+    name: "Control vs Parkinson"
+    classes: [0, 2]
+  task3:
+    name: "Dementia vs Parkinson"
+    classes: [1, 2]
+  task4:
+    name: "Three-Class"
+    classes: [0, 1, 2]
+
+modalities:
+  - T1w
+  - T2w
+  - FLAIR
+
+split:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  random_seed: 42
